@@ -40,7 +40,7 @@ None. For each step in the analysis, the raw data is loaded and processed from s
 ## [Analysis](#anlysis)
 Analysis is performed using machine learning approaches in Python. Technical details are included in the various notebook (`*.ipynb`) files.
 
-### [Evaluation Metrics](#evaluation-metrics)
+### [Choice of Evaluation Metrics](#choice-of-evaluation-metrics)
 In determining the [evaluation metrics](https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)#Offline_metrics)) to be considered for this business use case, keep in mind that the objective is to fund loans that do not default and do not fund loans loans that do default. With this in mind, the end user here, a conservative investor, wants to minimize their risk when it comes to funding loans, and so wants to
 - maximize true positives
   - this is a loan that
@@ -55,7 +55,7 @@ In determining the [evaluation metrics](https://en.wikipedia.org/wiki/Evaluation
       - investor missed an opportunity to earn returns
   - the false positive rate (`FPR`) is the percent of loans that do not default that the investor would not fund
 
-A case can be made that maximizing the true positive rate, correctly predicting loans that default (and minimizing money lost funding risky loans), is preferred to minimizing the false positive rate (incorrectly predicting loans that do not default, and minimizing missed opportunities to earn a return on lending money to these borrowers) for a conservative investor. In reality, this tradeoff should be discussed with the investor. For the current use case, both metrics will be used as much as possible, but the best model found during the analysis phase will be chosen based on the `TPR` (or recall).
+A case can be made that maximizing the true positive rate, correctly predicting loans that default (and minimizing money lost funding risky loans), is preferred to minimizing the false positive rate (incorrectly predicting loans that do not default, and minimizing missed opportunities to earn a return on lending money to these borrowers) for a conservative investor. This is assumed to be the case here. In reality, this tradeoff should be discussed with the investor. For the current use case, both metrics will be used as much as possible, but the best model found during the analysis phase will be chosen based on the `TPR` (or recall).
 
 ## [Usage](#usage)
 1. Clone this repository
