@@ -1,0 +1,13 @@
+jupyter
+nb_black
+nodeenv
+jupyter_contrib_nbextensions
+jupyter_nbextensions_configurator
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+imbalanced-learn
+yellowbrick
+azure-storage-blob

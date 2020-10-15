@@ -1,0 +1,19 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.8'
+    - run: pip install tox
+    - run: tox -e lint
+    - run: tox -e ci
+      env:
+        AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
+        AZURE_STORAGE_KEY: ${{ secrets.AZURE_STORAGE_KEY }}
+        ENDPOINT_SUFFIX: ${{ secrets.ENDPOINT_SUFFIX }}
