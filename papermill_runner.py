@@ -200,15 +200,15 @@ def run_notebooks(
 if __name__ == "__main__":
     PROJ_ROOT_DIR = os.getcwd()
     nb_dict_list = [
-        # one_dict,
-        # two_dict,
-        # three_dict,
+        one_dict,
+        two_dict,
+        three_dict,
         three_four_dict,
     ]
     nb_name_list = [
-        # one_dict_nb_name,
-        # two_dict_nb_name,
-        # three_dict_nb_name,
+        one_dict_nb_name,
+        two_dict_nb_name,
+        three_dict_nb_name,
         four_dict_nb_name,
     ]
     notebook_list = [
