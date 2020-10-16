@@ -16,3 +16,4 @@ dependencies:
     - seaborn
     - imbalanced-learn
     - yellowbrick
+    - azure-storage-blob
