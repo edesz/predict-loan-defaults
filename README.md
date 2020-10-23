@@ -11,6 +11,8 @@
    * [Supplementary data sources](#supplementary-data-sources)
    * [Data file creation](#data-file-creation)
 3. [Analysis](#analysis)
+   * [Evaluation Considerations](#evaluation-considerations)
+   * [Metrics Used](#metrics-used)
 4. [Usage](#usage)
 5. [Project Organization](#project-organization)
 
@@ -40,22 +42,46 @@ None. For each step in the analysis, the raw data is loaded and processed from s
 ## [Analysis](#anlysis)
 Analysis is performed using machine learning approaches in Python. Technical details are included in the various notebook (`*.ipynb`) files.
 
-### [Choice of Evaluation Metrics](#choice-of-evaluation-metrics)
-In determining the [evaluation metrics](https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)#Offline_metrics)) to be considered for this business use case, keep in mind that the objective is to fund loans that do not default and do not fund loans loans that do default. With this in mind, the end user here, a conservative investor, wants to minimize their risk when it comes to funding loans, and so wants to
-- maximize true positives
-  - this is a loan that
-    - was correctly predicted to result in a default (assigned label `1`) and indeed did result in a default
-      - investor did not fund such a loan and it was not paid off on time
-        - investor did not fund risky loans
-  - the true positive rate (`TPR`, or [recall](https://en.wikipedia.org/wiki/Precision_and_recall#Introduction)) is the percent of loans that default that the investor would not fund
-- minimize false positives
-  - this is a loan that
-    - is incorrectly predicted to result in a default (`1`) but was paid off on time (`0`)
-      - investor did not fund such a loan but it would have been paid off on time
-      - investor missed an opportunity to earn returns
-  - the false positive rate (`FPR`) is the percent of loans that do not default that the investor would not fund
+### [Evaluation Considerations](#evaluation-considerations)
 
-A case can be made that maximizing the true positive rate, correctly predicting loans that default (and minimizing money lost funding risky loans), is preferred to minimizing the false positive rate (incorrectly predicting loans that do not default, and minimizing missed opportunities to earn a return on lending money to these borrowers) for a conservative investor. This is assumed to be the case here. In reality, this tradeoff should be discussed with the investor. For the current use case, both metrics will be used as much as possible, but the best model found during the analysis phase will be chosen based on the `TPR` (or recall).
+The following are the types of errors to be considered
+
+| Actual | Predicted | Type of Error |
+|--------|-----------|---------------|
+| 0      | 1         | FP            |
+| 1      | 1         | TP            |
+| 0      | 0         | TN            |
+| 1      | 0         | FN            |
+
+The objective is to focus on the two types of misclassifications (errors) made by the quantitative analysis performed here - false negatives and false positives.
+
+False negatives (`FN`) are the biggest concern since they incorrectly predict that a loan won't defaut but it actually does result in a default. The loan is defaulted but the investor provides funding and with no possibility to earn a return. This costs the investor money since risky loans are funded that result in a loss of money. `FN` should be minimized.
+
+False positives (`FP`) predict  that a loan will default but it does not default and is paid off on time. This is a prospective loss of returns to the investor who has not funded the loan which would actually have been paid off. The investor could have effectively invested in these loans since they would have delivered returns. Since this was not done, returns are lost but principal is not lost, so that's not so bad. `FP` should be minimized.
+
+A conservative would prefer to miss funding opportunities for loans that are paid off on time (false positives) than providing funding to risky loans that result in a default and take away their returns and principal (false negatives).
+
+True negatives are when the model correctly identifies a loan paid off on time. The investor has funded such loans and is happily earning returns. This should not be used in punishing errors in the analysis.
+
+True positives are when the model correctly predicts a loan that has defaulted. Again, the investor is happy here since such loans were not funded. This too should not be used in punishing errors in the analysis.
+
+### [Metrics Used](#metrics-used)
+[Evaluation metrics](https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)#Offline_metrics) that make use the `FP` and `FN` will be chosen for quantitatively assessing numerical analysis
+- `TPR = TP / FN + TP`
+  - called [Sensitivity](https://en.wikipedia.org/wiki/Sensitivity_and_specificity), or [recall](https://en.wikipedia.org/wiki/Precision_and_recall#Introduction)
+  - this minimizes the `FN` as required
+  - since `FN` appears in the denominator, this metric should be maximized
+  - number of predicted defaults that did default, divided by the number of loans that did default
+  - this is the fraction of loans that shouldn't be funded (because their true outcome was a default) that were not funded since the investor has followed the predictions (default) made here
+- `FPR = FP / TN + FP`
+  - called [fall out](https://en.wikipedia.org/wiki/False_positive_rate)
+  - this minimizes `FP` as required
+  - since `FP` appears in the numerator, this metric should be minimized
+  - number of predicted defaults that did not default, divided by the number of loans did not default
+  - this is the fraction of loans that should be funded (because the true outcome was the loan being paid off on time) that were not funded since the investor followed the predictions (default) generated by analysis performed here
+
+Both metrics will be used as much as possible, but the best model found during the analysis phase will be chosen based on the `TPR` (or recall).
+
 
 ## [Usage](#usage)
 1. Clone this repository
