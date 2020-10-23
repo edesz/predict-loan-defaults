@@ -27,7 +27,7 @@ The objective of this project is to use data released by the [P2P lending](https
 
 Data on approved loans were available from the [Statistics section](https://www.lendingclub.com/info/statistics.action) of the Lending Club platform webpage. This also included data for loans that were not paid back on time, resulting in a [default](https://en.wikipedia.org/wiki/Default_(finance)).
 
-The goal of this project is to use historical Lending Club data to predict whether a new loan would be paid back in full on time or result in a default. The end user for this project is a conservative investor who was looking to determine whether to fund new loan applications on the platform (while it was still active).
+The goal of this project is to use historical Lending Club data to predict whether a new loan would be paid back in full on time or result in a default. The end user for this project is a cautious (risk-averse) investor who was looking to determine whether to fund new loan applications on the platform (while it was still active).
 
 ## [Data acquisition](#data-acquisition)
 ### [Primary data source](#primary-data-source)
@@ -59,7 +59,7 @@ False negatives (`FN`) are the biggest concern since they incorrectly predict th
 
 False positives (`FP`) predict  that a loan will default but it does not default and is paid off on time. This is a prospective loss of returns to the investor who has not funded the loan which would actually have been paid off. The investor could have effectively invested in these loans since they would have delivered returns. Since this was not done, returns are lost but principal is not lost, so that's not so bad. `FP` should be minimized.
 
-A conservative would prefer to miss funding opportunities for loans that are paid off on time (false positives) than providing funding to risky loans that result in a default and take away their returns and principal (false negatives).
+A risk-averse investor would prefer to miss funding opportunities for loans that are paid off on time (false positives) than providing funding to risky loans that result in a default and take away their returns and principal (false negatives).
 
 True negatives are when the model correctly identifies a loan paid off on time. The investor has funded such loans and is happily earning returns. This should not be used in punishing errors in the analysis.
 
