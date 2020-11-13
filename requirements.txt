@@ -6,8 +6,9 @@ jupyter_nbextensions_configurator
 numpy
 pandas
 scikit-learn
+imbalanced-learn
 matplotlib
 seaborn
-imbalanced-learn
+altair
 yellowbrick
 azure-storage-blob

@@ -5,9 +5,11 @@
 from multiprocessing import cpu_count
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import sklearn.metrics as mr
 import sklearn.model_selection as ms
 import yellowbrick.classifier as ybc
 from joblib import Parallel, delayed
@@ -29,6 +31,13 @@ def customize_splines(ax: plt.axis) -> plt.axis:
     ax.spines["top"].set_linewidth(1)
     ax.spines["right"].set_edgecolor("lightgrey")
     ax.spines["right"].set_linewidth(1)
+    return ax
+
+
+def add_gridlines(ax: plt.axis):
+    ax.grid(which="both", axis="both", color="lightgrey", zorder=0)
+    ax.xaxis.grid(True)
+    ax.yaxis.grid(True)
     return ax
 
 
@@ -102,6 +111,7 @@ def plot_learning_curve(
         handletextpad=0.3,
         columnspacing=0.4,
     )
+    axes[0].xaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.0f}"))
 
     # Plot n_samples vs fit_times
     axes[1].grid()
@@ -114,11 +124,12 @@ def plot_learning_curve(
     )
     axes[1].set_xlabel(None)
     axes[1].set_title(
-        "Fit times versus Training size",
+        "Fit times (sec) versus Training size",
         loc="left",
         fontweight="bold",
         fontsize=axis_tick_label_fontsize,
     )
+    axes[1].xaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.0f}"))
 
     # Plot fit_time vs score
     axes[2].grid()
@@ -131,7 +142,7 @@ def plot_learning_curve(
     )
     axes[2].set_xlabel(None)
     axes[2].set_title(
-        "Test score versus Training time",
+        "Test score versus Training time (sec)",
         loc="left",
         fontweight="bold",
         fontsize=axis_tick_label_fontsize,
@@ -145,36 +156,23 @@ def plot_learning_curve(
 
 def plot_permutation_importances(
     pipe,
-    X_train,
     X_test,
-    y_train,
     y_test,
     scorer,
     n_repeats,
-    wspace=0.5,
     fig_title_fontsize=16,
     fig_title_vertical_pos=1.1,
     axis_tick_label_fontsize=12,
+    axis_label_fontsize=14,
     box_color="cyan",
     fig_size=(12, 6),
 ):
-    fig_title = (
+    plot_title = (
         "Permutation Importances using "
         f"{type(pipe.named_steps['clf']).__name__}"
     )
-    fig = plt.figure(figsize=fig_size)
-    fig.suptitle(
-        fig_title,
-        fontsize=fig_title_fontsize,
-        fontweight="bold",
-        y=fig_title_vertical_pos,
-    )
-    grid = plt.GridSpec(1, 2, wspace=wspace)
-    ax1 = fig.add_subplot(grid[0, 0])
-    ax2 = fig.add_subplot(grid[0, 1])
-    for Xs, ys, ax, split_name in zip(
-        [X_train, X_test], [y_train, y_test], [ax1, ax2], ["train", "test"]
-    ):
+    _, ax1 = plt.subplots(figsize=fig_size)
+    for Xs, ys, ax, split_name in zip([X_test], [y_test], [ax1], ["test"]):
         result = permutation_importance(
             pipe,
             Xs,
@@ -193,18 +191,23 @@ def plot_permutation_importances(
             zorder=3,
             ax=ax,
         )
-        ax.axvline(x=0, color="k", ls="--")
+        ax.axvline(x=0, color="k", ls="--", lw=1.25)
         ax.set_yticks(range(len(sorted_idx)))
         ax.set_yticklabels(Xs.columns[sorted_idx][::-1])
         ax.set_title(
-            f"{split_name.title()}",
+            f"{plot_title} ({split_name.title()} split)",
             loc="left",
             fontweight="bold",
-            fontsize=axis_tick_label_fontsize,
+            fontsize=fig_title_fontsize,
+        )
+        ax.set_xlabel(
+            f"Change in avg. score, over {n_repeats} passes through the data",
+            fontsize=axis_label_fontsize,
         )
         ax.xaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
         ax.yaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
         ax.grid(which="both", axis="both", color="lightgrey", zorder=0)
+        ax.xaxis.grid(True, which="major", color="lightgrey", zorder=0)
         _ = customize_splines(ax)
 
 
@@ -518,3 +521,68 @@ def plot_roc_curve(
     )
     ax.grid(which="both", axis="both", color="lightgrey", zorder=0)
     _ = customize_splines(ax)
+
+
+def plot_pr_roc_curves(
+    y_test,
+    y_probs,
+    est_name,
+    axis_tick_label_fontsize=12,
+    wspace=0.1,
+    legend_position=(0.35, 1.1),
+    fig_size=(12, 4),
+):
+    fig = plt.figure(figsize=fig_size)
+    grid = plt.GridSpec(1, 2, wspace=wspace)
+    ax1 = fig.add_subplot(grid[0, 0])
+    ax2 = fig.add_subplot(grid[0, 1])
+
+    p, r, p_thresholds = mr.precision_recall_curve(y_test, y_probs)
+    fscore = (2 * p * r) / (p + r)
+    ix = np.argmax(fscore)
+    no_skill = len(y_test[y_test == 1]) / len(y_test)
+    ax1.plot([0, 1], [no_skill, no_skill], ls="--", label="No Skill")
+    ax1.plot(r, p, label=est_name)
+    ax1.set_title("Precision-Recall", loc="left", fontweight="bold")
+    ax1.annotate(str(np.round(p_thresholds[ix], 3)), (r[ix], p[ix]))
+    ax1.scatter(
+        r[ix],
+        p[ix],
+        marker="o",
+        color="black",
+        label="Best",
+        zorder=3,
+    )
+
+    fpr, tpr, r_thresholds = mr.roc_curve(y_test, y_probs)
+    gmeans = np.sqrt(tpr * (1 - fpr))
+    ix = np.argmax(gmeans)
+    no_skill = [0, 1]
+    ax2.plot(no_skill, no_skill, ls="--", label="No Skill")
+    ax2.plot(fpr, tpr, label=est_name)
+    ax2.set_title("ROC-AUC", loc="left", fontweight="bold")
+    ax2.annotate(str(np.round(r_thresholds[ix], 3)), (fpr[ix], tpr[ix]))
+    ax2.scatter(
+        fpr[ix],
+        tpr[ix],
+        marker="o",
+        color="black",
+        label="Best",
+        zorder=3,
+    )
+    ax2.legend(
+        loc="upper left",
+        bbox_to_anchor=legend_position,
+        columnspacing=0.4,
+        handletextpad=0.2,
+        frameon=False,
+        ncol=3,
+    )
+
+    for ax in [ax1, ax2]:
+        _ = customize_splines(ax)
+        ax.xaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
+        ax.yaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
+        ax.grid(which="both", axis="both", color="lightgrey", zorder=10)
+        ax.xaxis.grid(True)
+        ax.yaxis.grid(True)
