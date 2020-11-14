@@ -7,7 +7,7 @@ import sklearn.metrics as mr
 from sklearn.utils.class_weight import compute_sample_weight
 
 
-def get_eval_metrics(y_test, y_probs, split="test", threshold=0.5):
+def get_eval_metrics(y_test, y_probs, split="test", threshold=0.5, beta=2):
     y_pred_test_selected_threshold = (y_probs >= threshold).astype("int")
     d = {
         f"{split}_recall_binary": recall_binary_scorer(
@@ -15,6 +15,9 @@ def get_eval_metrics(y_test, y_probs, split="test", threshold=0.5):
         ),
         f"{split}_fpr": -false_positive_rate_scorer(
             y_test, y_pred_test_selected_threshold
+        ),
+        f"{split}_f2": f2_binary_scorer(
+            y_test, y_pred_test_selected_threshold, beta
         ),
         f"{split}_pr_auc": pr_auc_score(y_test, y_probs),
         f"{split}_roc_auc": roc_auc_binary_scorer(
@@ -45,6 +48,17 @@ def recall_binary_scorer(y_true, y_pred):
     return recall_binary_score
 
 
+def f2_binary_scorer(y_true, y_pred, beta=2):
+    f2_binary_score = mr.fbeta_score(
+        y_true,
+        y_pred,
+        beta=beta,
+        average="binary",
+        sample_weight=compute_sample_weight(class_weight="balanced", y=y_true),
+    )
+    return f2_binary_score
+
+
 def false_positive_rate_scorer(y_true, y_pred):
     tn = y_pred[(y_pred == 0) & (y_true == 0)].shape[0]
     fp = y_pred[(y_pred == 1) & (y_true == 0)].shape[0]
@@ -64,6 +78,12 @@ def threshold_recall_score(ground_truth, predictions, threshold=0.5):
     return recall
 
 
+def threshold_f2_score(ground_truth, predictions, threshold=0.5, beta=2):
+    predicted = (predictions >= threshold).astype("int")
+    f2 = f2_binary_scorer(ground_truth, predicted, beta)
+    return f2
+
+
 def threshold_fpr_score(ground_truth, predictions, threshold=0.5):
     predicted = (predictions >= threshold).astype("int")
     fpr = false_positive_rate_scorer(ground_truth, predicted)
@@ -76,7 +96,7 @@ def pr_auc_score(ground_truth, y_probs):
     return pr_auc_score
 
 
-def get_scores(y_test, y_probs, t):
+def get_scores(y_test, y_probs, t=0.5, beta=2):
     prob_to_label = (y_probs >= t).astype("int")
     return [
         mr.roc_auc_score(y_test, prob_to_label),
@@ -103,4 +123,12 @@ def get_scores(y_test, y_probs, t):
             ),
         ),
         -1 * false_positive_rate_scorer(y_test, prob_to_label),
+        mr.fbeta_score(
+            y_test,
+            prob_to_label,
+            beta=beta,
+            sample_weight=compute_sample_weight(
+                class_weight="balanced", y=y_test
+            ),
+        ),
     ]

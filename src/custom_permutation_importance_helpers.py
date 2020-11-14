@@ -132,7 +132,7 @@ def manual_plot_permutation_importance(
         fontsize=fig_title_fontsize,
     )
     ax.set_xlabel(
-        f"Change in avg. return (predicted - theoretical), after shuffling "
+        f"Change in avg. return (predicted - true), after shuffling "
         f"data {n_repeats} times",
         fontsize=axis_label_fontsize,
     )

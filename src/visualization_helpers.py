@@ -530,6 +530,7 @@ def plot_pr_roc_curves(
     axis_tick_label_fontsize=12,
     wspace=0.1,
     legend_position=(0.35, 1.1),
+    f2_beta=2,
     fig_size=(12, 4),
 ):
     fig = plt.figure(figsize=fig_size)
@@ -538,8 +539,8 @@ def plot_pr_roc_curves(
     ax2 = fig.add_subplot(grid[0, 1])
 
     p, r, p_thresholds = mr.precision_recall_curve(y_test, y_probs)
-    fscore = (2 * p * r) / (p + r)
-    ix = np.argmax(fscore)
+    f2score = ((1 + (f2_beta ** 2)) * p * r) / (((f2_beta ** 2) * p) + r)
+    ix = np.argmax(f2score)
     no_skill = len(y_test[y_test == 1]) / len(y_test)
     ax1.plot([0, 1], [no_skill, no_skill], ls="--", label="No Skill")
     ax1.plot(r, p, label=est_name)

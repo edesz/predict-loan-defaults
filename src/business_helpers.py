@@ -25,8 +25,33 @@ def int_income_calculator(r, p, n):
     if r > 1:
         r = r / 100
     r /= 12
-    installment = p * ((r * (1 + r) ** n) / (((1 + r) ** n) - 1))
-    return installment * n
+    monthly_installment = p * ((r * (1 + r) ** n) / (((1 + r) ** n) - 1))
+    interest_income = monthly_installment * n
+    return interest_income
+
+
+def convert_confusion_matrix_to_business_cost(
+    y_true, y_pred, cm_labels, principal, interest_income
+):
+    df_cm = pd.DataFrame(
+        confusion_matrix(
+            np.array([y_true]),
+            np.array([y_pred]),
+            labels=cm_labels,
+        ),
+        index=cm_labels,
+        columns=cm_labels,
+    )
+    TN = df_cm.iloc[0, 0]
+    FP = df_cm.iloc[0, 1]
+    FN = df_cm.iloc[1, 0]
+    TP = df_cm.iloc[1, 1]
+    fn_pen = principal
+    tn_pen = interest_income
+    fp_pen = interest_income
+    tp_pen = 0
+    ds = (-fn_pen * FN) + (tp_pen * TP) + (-fp_pen * FP) + (tn_pen * TN)
+    return ds
 
 
 # def calculate_avg_return_vs_theoretical(X, y, pipe, threshold):
@@ -71,47 +96,43 @@ def int_income_calculator(r, p, n):
 
 
 def rowwise_calculate_avg_return_vs_theoretical(
-    X,
+    principal,
     y,
     t,
     y_probs,
-    theoretical_test,
+    interest_income,
 ):
     cm_labels = np.sort(np.unique([0, 1]))
-    df_t_cm = pd.DataFrame(
-        confusion_matrix(
-            np.array([y]),
-            np.array([np.where(y_probs > t, 1, 0)]),
-            labels=cm_labels,
-        ),
-        index=cm_labels,
-        columns=cm_labels,
+    ds_predicted = convert_confusion_matrix_to_business_cost(
+        np.array([y]),
+        np.array([np.where(y_probs > t, 1, 0)]),
+        cm_labels,
+        principal,
+        interest_income,
     )
-    TN = df_t_cm.iloc[0, 0]
-    FP = df_t_cm.iloc[0, 1]
-    FN = df_t_cm.iloc[1, 0]
-    TP = df_t_cm.iloc[1, 1]
-    fn_pen = X
-    tn_pen = theoretical_test
-    fp_pen = theoretical_test
-    tp_pen = 0
-    ds = (-fn_pen * FN) + (tp_pen * TP) + (-fp_pen * FP) + (tn_pen * TN)
-    mean_err = ds - theoretical_test
-    return mean_err
+    ds_true = convert_confusion_matrix_to_business_cost(
+        np.array([y]),
+        np.array([y]),
+        cm_labels,
+        principal,
+        interest_income,
+    )
+    err = ds_predicted - ds_true
+    return err
 
 
 def calculate_avg_return_vs_theoretical_v2(X, y, pipe, t):
     r = X["int_rate"]
     p = X["loan_amnt"]
     n = X["term"].str.extract(r"(\d+)").astype(int).squeeze()
-    theoretical_return = np.vectorize(int_income_calculator)(r, p, n) - p
+    interest_income = np.vectorize(int_income_calculator)(r, p, n) - p
     y_probs = pipe.predict_proba(X)[:, 1]
     score = np.vectorize(rowwise_calculate_avg_return_vs_theoretical)(
-        r,
+        p,
         y,
         t,
         pd.Series(y_probs, index=X.index),
-        theoretical_return,
+        interest_income,
     )
     score = pd.Series(score, index=X.index)
     return score

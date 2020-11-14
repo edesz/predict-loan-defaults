@@ -116,46 +116,61 @@ def plot_metric_based_threshold_tuning_plots(
     y_test,
     y_probs,
     thresholds,
+    f2_beta=2,
     legend_position=(1.01, 1),
     show_best_t_by_f1=False,
     show_plot=False,
     fig_size=(8, 4),
 ):
     executor = Parallel(n_jobs=cpu_count(), backend="multiprocessing")
-    tasks = (delayed(get_scores)(y_test, y_probs, t) for t in thresholds)
+    tasks = (
+        delayed(get_scores)(y_test, y_probs, t, f2_beta) for t in thresholds
+    )
     scores = executor(tasks)
     df_s = pd.DataFrame(scores)
-    roc_auc_scores, f1_scores, precision_scores, recall_scores, fpr_scores = (
+    (
+        roc_auc_scores,
+        f1_scores,
+        precision_scores,
+        recall_scores,
+        fpr_scores,
+        f2_scores,
+    ) = (
         df_s[0].to_list(),
         df_s[1].to_list(),
         df_s[2].to_list(),
         df_s[3].to_list(),
         df_s[4].to_list(),
+        df_s[5].to_list(),
     )
     d_threshold_tuning_scores = {}
+    metrics = [
+        roc_auc_scores,
+        precision_scores,
+        recall_scores,
+        f1_scores,
+        fpr_scores,
+        f2_scores,
+    ]
+    metrics_list = ["ROC-AUC", "Precision", "Recall", "F1", "FPR", "F2"]
     df_all_threshold_tuning_scores = (
         pd.DataFrame(
-            [
-                roc_auc_scores,
-                precision_scores,
-                recall_scores,
-                f1_scores,
-                fpr_scores,
-            ],
-            index=["ROC-AUC", "Precision", "Recall", "F1", "FPR"],
+            metrics,
+            index=metrics_list,
         ).T
     ).assign(threshold=thresholds)
     if show_plot:
         _, ax = plt.subplots(figsize=fig_size)
+        ax.axvline(
+            x=0.5,
+            ls="--",
+            lw=1.25,
+            c="k",
+            label="Default (0.5)",
+        )
     for scores, name in zip(
-        [
-            roc_auc_scores,
-            precision_scores,
-            recall_scores,
-            f1_scores,
-            fpr_scores,
-        ],
-        ["ROC-AUC", "Precision", "Recall", "F1", "FPR"],
+        metrics,
+        metrics_list,
     ):
         d_threshold_tuning_scores[name] = [
             thresholds[np.argmax(scores)],
@@ -163,13 +178,6 @@ def plot_metric_based_threshold_tuning_plots(
         ]
         if show_plot:
             ax.plot(thresholds, scores, label=name)
-            ax.axvline(
-                x=0.5,
-                ls="--",
-                lw=1.25,
-                c="k",
-                label="Default (0.5)",
-            )
             if show_best_t_by_f1:
                 vline_name = (
                     f"t-best[F1] = {d_threshold_tuning_scores['F1'][0]:.3f}"

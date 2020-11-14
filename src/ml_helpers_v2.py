@@ -50,8 +50,8 @@ def get_best_pipes(
             ),
         ]
     )
-    print(best_pipe)
-    print(best_dummy_pipe)
+    # print(best_pipe)
+    # print(best_dummy_pipe)
     return [best_pipe, best_dummy_pipe]
 
 
