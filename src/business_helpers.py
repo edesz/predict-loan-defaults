@@ -117,7 +117,7 @@ def rowwise_calculate_avg_return_vs_theoretical(
         principal,
         interest_income,
     )
-    err = ds_predicted - ds_true
+    err = np.abs(ds_predicted - ds_true)
     return err
 
 
