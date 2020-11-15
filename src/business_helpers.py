@@ -26,12 +26,12 @@ def int_income_calculator(r, p, n):
         r = r / 100
     r /= 12
     monthly_installment = p * ((r * (1 + r) ** n) / (((1 + r) ** n) - 1))
-    interest_income = monthly_installment * n
-    return interest_income
+    total_income = monthly_installment * n
+    return total_income
 
 
 def convert_confusion_matrix_to_business_cost(
-    y_true, y_pred, cm_labels, principal, interest_income
+    y_true, y_pred, cm_labels, principal, total_income
 ):
     df_cm = pd.DataFrame(
         confusion_matrix(
@@ -47,8 +47,8 @@ def convert_confusion_matrix_to_business_cost(
     FN = df_cm.iloc[1, 0]
     TP = df_cm.iloc[1, 1]
     fn_pen = principal
-    tn_pen = interest_income
-    fp_pen = interest_income
+    tn_pen = total_income
+    fp_pen = total_income
     tp_pen = 0
     ds = (-fn_pen * FN) + (tp_pen * TP) + (-fp_pen * FP) + (tn_pen * TN)
     return ds
@@ -100,7 +100,7 @@ def rowwise_calculate_avg_return_vs_theoretical(
     y,
     t,
     y_probs,
-    interest_income,
+    total_income,
 ):
     cm_labels = np.sort(np.unique([0, 1]))
     ds_predicted = convert_confusion_matrix_to_business_cost(
@@ -108,14 +108,14 @@ def rowwise_calculate_avg_return_vs_theoretical(
         np.array([np.where(y_probs > t, 1, 0)]),
         cm_labels,
         principal,
-        interest_income,
+        total_income,
     )
     ds_true = convert_confusion_matrix_to_business_cost(
         np.array([y]),
         np.array([y]),
         cm_labels,
         principal,
-        interest_income,
+        total_income,
     )
     err = np.abs(ds_predicted - ds_true)
     return err
@@ -125,14 +125,14 @@ def calculate_avg_return_vs_theoretical_v2(X, y, pipe, t):
     r = X["int_rate"]
     p = X["loan_amnt"]
     n = X["term"].str.extract(r"(\d+)").astype(int).squeeze()
-    interest_income = np.vectorize(int_income_calculator)(r, p, n) - p
+    total_income = np.vectorize(int_income_calculator)(r, p, n) - p
     y_probs = pipe.predict_proba(X)[:, 1]
     score = np.vectorize(rowwise_calculate_avg_return_vs_theoretical)(
         p,
         y,
         t,
         pd.Series(y_probs, index=X.index),
-        interest_income,
+        total_income,
     )
     score = pd.Series(score, index=X.index)
     return score

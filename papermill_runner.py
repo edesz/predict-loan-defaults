@@ -98,6 +98,7 @@ three_dict.update(
         raw_data_path=raw_data_path,
     )
 )
+# Append the inputs required by 4_*.ipynb
 three_four_dict.update(
     dict(
         raw_data_file_path=raw_data_path,
