@@ -156,10 +156,13 @@ def plot_learning_curve(
 
 def plot_permutation_importances(
     pipe,
+    X_train,
     X_test,
+    y_train,
     y_test,
     scorer,
     n_repeats,
+    wspace=0.5,
     fig_title_fontsize=16,
     fig_title_vertical_pos=1.1,
     axis_tick_label_fontsize=12,
@@ -167,12 +170,23 @@ def plot_permutation_importances(
     box_color="cyan",
     fig_size=(12, 6),
 ):
-    plot_title = (
+    fig_title = (
         "Permutation Importances using "
         f"{type(pipe.named_steps['clf']).__name__}"
     )
-    _, ax1 = plt.subplots(figsize=fig_size)
-    for Xs, ys, ax, split_name in zip([X_test], [y_test], [ax1], ["test"]):
+    fig = plt.figure(figsize=fig_size)
+    fig.suptitle(
+        fig_title,
+        fontsize=fig_title_fontsize,
+        fontweight="bold",
+        y=fig_title_vertical_pos,
+    )
+    grid = plt.GridSpec(1, 2, wspace=wspace)
+    ax1 = fig.add_subplot(grid[0, 0])
+    ax2 = fig.add_subplot(grid[0, 1])
+    for Xs, ys, ax, split_name in zip(
+        [X_train, X_test], [y_train, y_test], [ax1, ax2], ["train", "test"]
+    ):
         result = permutation_importance(
             pipe,
             Xs,
@@ -191,14 +205,14 @@ def plot_permutation_importances(
             zorder=3,
             ax=ax,
         )
-        ax.axvline(x=0, color="k", ls="--", lw=1.25)
+        ax.axvline(x=0, color="k", ls="--")
         ax.set_yticks(range(len(sorted_idx)))
         ax.set_yticklabels(Xs.columns[sorted_idx][::-1])
         ax.set_title(
-            f"{plot_title} ({split_name.title()} split)",
+            f"{split_name.title()}",
             loc="left",
             fontweight="bold",
-            fontsize=fig_title_fontsize,
+            fontsize=axis_tick_label_fontsize,
         )
         ax.set_xlabel(
             f"Change in avg. score, over {n_repeats} passes through the data",

@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 
+from src.ml_metrics_v2 import rowwise_check_confusion_matrix
+
 
 def int_income_calculator(r, p, n):
     """
@@ -46,6 +48,7 @@ def convert_confusion_matrix_to_business_cost(
     FP = df_cm.iloc[0, 1]
     FN = df_cm.iloc[1, 0]
     TP = df_cm.iloc[1, 1]
+    rowwise_check_confusion_matrix(TN, FP, FN, TP, cm_labels)
     fn_pen = principal
     tn_pen = total_income
     fp_pen = total_income

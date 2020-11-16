@@ -132,3 +132,34 @@ def get_scores(y_test, y_probs, t=0.5, beta=2):
             ),
         ),
     ]
+
+
+def get_cm(t, p, cm_labels):
+    df_cm = (
+        pd.DataFrame(
+            mr.confusion_matrix(t, p, labels=cm_labels),
+            index=cm_labels,
+            columns=cm_labels,
+        )
+        .rename_axis("actual", axis=0)
+        .rename_axis("predicted", axis=1)
+    )
+    # print(df_cm)
+    return df_cm
+
+
+def rowwise_check_confusion_matrix(tn, fp, fn, tp, cm_labels):
+    d = {
+        "FN": [1, {"t": 1, "p": 0}],
+        "TP": [1, {"t": 1, "p": 1}],
+        "TN": [1, {"t": 0, "p": 0}],
+        "FP": [1, {"t": 0, "p": 1}],
+    }
+    # print(d)
+    for k, v in d.items():
+        expected = get_cm([v[1]["t"]], [v[1]["p"]], cm_labels).iloc[
+            v[1]["t"], v[1]["p"]
+        ]
+        observed = v[0]
+        # print(k, v[1]["t"], v[1]["p"], expected, observed)
+        assert expected == observed
