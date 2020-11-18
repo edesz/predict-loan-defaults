@@ -154,7 +154,7 @@ def plot_learning_curve(
         _ = customize_splines(ax)
 
 
-def plot_permutation_importances(
+def builtin_plot_permutation_importances(
     pipe,
     X_train,
     X_test,
@@ -170,8 +170,11 @@ def plot_permutation_importances(
     box_color="cyan",
     fig_size=(12, 6),
 ):
+    scorer_name = scorer._score_func.__name__.split("_score")[0].replace(
+        "threshold_", ""
+    )
     fig_title = (
-        "Permutation Importances using "
+        f"{scorer_name.upper()} Permutation Importances using "
         f"{type(pipe.named_steps['clf']).__name__}"
     )
     fig = plt.figure(figsize=fig_size)
@@ -447,6 +450,7 @@ def plot_grouped_bar_chart(
     for ax in [ax1, ax2]:
         ax.grid(which="both", axis="both", color="lightgrey", zorder=0)
         _ = customize_splines(ax)
+        _ = add_gridlines(ax)
 
 
 def plot_grouped_histogram(
@@ -480,7 +484,6 @@ def plot_grouped_histogram(
         columnspacing=0.2,
         frameon=False,
     )
-
     ptitle = f"Loan defaults by {col_to_plot.title()}"
     df_true_default = df[df["is_default"] == 1]
     df_false_default = df[df["is_default"] == 0]
@@ -495,6 +498,8 @@ def plot_grouped_histogram(
         columnspacing=0.2,
         frameon=False,
     )
+    for ax in [ax1, ax2]:
+        _ = add_gridlines(ax)
 
 
 def plot_roc_curve(
@@ -601,3 +606,34 @@ def plot_pr_roc_curves(
         ax.grid(which="both", axis="both", color="lightgrey", zorder=10)
         ax.xaxis.grid(True)
         ax.yaxis.grid(True)
+
+
+def plot_lower_corr_heatmap(
+    df_corr,
+    ptitle,
+    lw=1,
+    annot_dict={True: ".2f"},
+    ptitle_y_loc=1,
+    show_cbar=False,
+    cbar_shrink_factor=1,
+    fig_size=(10, 10),
+):
+    _, ax = plt.subplots(figsize=fig_size)
+    mask = np.triu(np.ones_like(df_corr, dtype=bool))
+    sns.heatmap(
+        df_corr,
+        mask=mask,
+        vmin=-1,
+        vmax=1,
+        center=0,
+        cmap=sns.diverging_palette(220, 10, as_cmap=True),
+        square=True,
+        ax=ax,
+        annot=list(annot_dict.keys())[0],
+        cbar=show_cbar,
+        linewidths=lw,
+        cbar_kws={"shrink": cbar_shrink_factor},
+        fmt=list(annot_dict.values())[0],
+    )
+    ax.set_title(ptitle, loc="left", fontweight="bold", y=ptitle_y_loc)
+    ax.tick_params(left=False, bottom=False)

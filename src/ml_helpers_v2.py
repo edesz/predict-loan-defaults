@@ -3,14 +3,80 @@
 
 
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
+import src.custom_transformers as ct
+
+
+def create_pipe(
+    clf,
+    preprocessor_type,
+    numerical_columns,
+    nominal_columns,
+    corr_max_threshold=0.5,
+    corr_method="spearman",
+):
+    col_transformers = {
+        c: Pipeline(
+            steps=[
+                ("trans", ct.DFPowerTransformer("yeo-johnson")),
+                ("ss", ct.DFStandardScaler()),
+            ]
+        )
+        for c in numerical_columns
+    }
+    cat_transformer = [
+        (
+            "onehot",
+            ct.DFOneHotEncoderV2(handle_unknown="ignore"),
+            # OneHotEncoder(handle_unknown="ignore"),
+            nominal_columns,
+        )
+    ]
+    num_transformer = [
+        (
+            "nums",
+            Pipeline(steps=[("trans", ct.DFStandardScaler())]),
+            numerical_columns,
+        )
+    ]
+    numerical_col_transformers_list = [
+        (k, v, [k]) for k, v in col_transformers.items()
+    ]
+    preprocessors = {
+        "no_trans": ColumnTransformer(
+            transformers=num_transformer + cat_transformer,
+            remainder="passthrough",
+        ),
+        "trans": ColumnTransformer(
+            transformers=numerical_col_transformers_list + cat_transformer,
+            remainder="passthrough",
+        ),
+    }
+    feat_selector = ct.DFCorrColumnDropper(corr_max_threshold, corr_method)
+    pipe_trans = Pipeline(
+        [
+            ("preprocessor", preprocessors[preprocessor_type]),
+            ("fs", feat_selector),
+        ]
+    )
+    pipe_clf = Pipeline([("clf", clf)])
+    pipe = Pipeline(
+        [
+            ("preprocessor", preprocessors[preprocessor_type]),
+            ("fs", feat_selector),
+            ("clf", clf),
+        ]
+    )
+    return [pipe_trans, pipe_clf, pipe]
+
 
 def get_best_pipes(
-    best_cfg_idx, best_dummy_cfg_idx, df_gs, preprocessor, param_cols
+    best_cfg_idx, best_dummy_cfg_idx, df_gs, preprocessor, fs, param_cols
 ):
     best_clf_params_dict = {
         k.split("__")[1]: v
@@ -31,6 +97,7 @@ def get_best_pipes(
     best_pipe = Pipeline(
         [
             ("preprocessor", preprocessor),
+            ("fs", fs),
             (
                 "clf",
                 df_gs.loc[best_cfg_idx, "clf_obj"].set_params(
@@ -42,6 +109,7 @@ def get_best_pipes(
     best_dummy_pipe = Pipeline(
         [
             ("preprocessor", preprocessor),
+            ("fs", fs),
             (
                 "clf",
                 df_gs.loc[best_dummy_cfg_idx, "clf_obj"].set_params(
@@ -60,6 +128,7 @@ def gridsearch(
     y_train,
     params_dicts,
     preprocessor,
+    fs,
     cv,
     multi_scorers,
     threshold=0.5,
@@ -71,6 +140,7 @@ def gridsearch(
             params_dict,
             clf_name,
             preprocessor,
+            fs,
             cv,
             multi_scorers,
             threshold,
@@ -89,6 +159,7 @@ def gs_train_score(
     params_dict,
     clf_name,
     preprocessor,
+    fsel,
     cv,
     multi_scorers,
     threshold=0.5,
@@ -100,7 +171,9 @@ def gs_train_score(
         ),
     }
     clf = clf_dict[clf_name]
-    pipe = Pipeline([("preprocessor", preprocessor), ("clf", clf)])
+    pipe = Pipeline(
+        [("preprocessor", preprocessor), ("fs", fsel), ("clf", clf)]
+    )
     params_dict = {f"clf__{k}": v for k, v in params_dict.items()}
     gs = GridSearchCV(
         estimator=pipe,

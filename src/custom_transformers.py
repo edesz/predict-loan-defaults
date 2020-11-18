@@ -9,7 +9,7 @@ import pandas as pd
 import sklearn.preprocessing as spp
 from scipy.cluster import hierarchy
 from scipy.stats import spearmanr
-from sklearn.base import TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class DFNanThresholdColumnDropper(TransformerMixin):
@@ -300,3 +300,72 @@ class DFHierarchicalClusterSpearmanRank(TransformerMixin):
     def fit_transform(self, X, y=None, **kwargs):
         self = self.fit(X, y)
         return self.transform(X)
+
+
+class DFOneHotEncoderV2(BaseEstimator, TransformerMixin):
+    def __init__(self, handle_unknown="ignore"):
+        self.handle_unknown = handle_unknown
+
+    def fit(self, X, y=None):
+        self.ohe = spp.OneHotEncoder(handle_unknown=self.handle_unknown)
+        self.ohe.fit(X.to_numpy())
+        return self
+
+    def transform(self, X):
+        # assumes X is a DataFrame
+        Xohe = self.ohe.transform(X.to_numpy()).toarray()
+        self.feature_names_ = list(self.ohe.get_feature_names(list(X)))
+        Xtrans = pd.DataFrame(
+            Xohe, index=X.index, columns=self.feature_names_
+        ).astype(int)
+        # print(self.feature_names_)
+        return Xtrans
+
+    def get_features(self):
+        return self.feature_names_
+
+    def fit_transform(self, X, y=None, **kwargs):
+        self = self.fit(X, y)
+        return self.transform(X)
+
+
+class DFCorrColumnDropper(BaseEstimator, TransformerMixin):
+    def __init__(self, corr_max_threshold=0.5, method="spearman"):
+        self.method = method
+        self.corr_max_threshold = corr_max_threshold
+
+    def fit(self, X, y=None):
+        X = pd.DataFrame(X)
+        corr = X.corr(method=self.method)
+        corr_abs = corr.abs()
+        # Select upper triangle of correlation matrix
+        upper = corr_abs.where(
+            np.triu(np.ones(corr_abs.shape), k=1).astype(np.bool)
+        )
+        # Find index of feature columns with correlation greater than
+        # corr_max_threshold
+        self.to_drop = [
+            column
+            for column in upper.columns
+            if any(upper[column] > self.corr_max_threshold)
+        ]
+        # print(to_drop)
+        self.corrm = X.columns[~corr_abs.columns.isin(self.to_drop)].tolist()
+        excluded_cols = list(set(list(X)) - set(list(self.corrm)))
+        assert len(excluded_cols) == len(self.to_drop)
+        self.corrm_idxs = X.columns.get_indexer(self.corrm).tolist()
+        return self
+
+    def transform(self, X):
+        X = pd.DataFrame(X)
+        return X.iloc[:, self.corrm_idxs]
+
+    def fit_transform(self, X, y=None, **kwargs):
+        self = self.fit(X, y)
+        return self.transform(X)
+
+    def get_feature_indexes(self):
+        return self.corrm_idxs
+
+    def get_dropped_feature_indexes(self):
+        return self.to_drop

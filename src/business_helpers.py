@@ -33,7 +33,7 @@ def int_income_calculator(r, p, n):
 
 
 def convert_confusion_matrix_to_business_cost(
-    y_true, y_pred, cm_labels, principal, total_income
+    y_true, y_pred, cm_labels, principal, total_income, check_cm=False
 ):
     df_cm = pd.DataFrame(
         confusion_matrix(
@@ -48,7 +48,8 @@ def convert_confusion_matrix_to_business_cost(
     FP = df_cm.iloc[0, 1]
     FN = df_cm.iloc[1, 0]
     TP = df_cm.iloc[1, 1]
-    rowwise_check_confusion_matrix(TN, FP, FN, TP, cm_labels)
+    if check_cm:
+        rowwise_check_confusion_matrix(TN, FP, FN, TP, cm_labels)
     fn_pen = principal
     tn_pen = total_income
     fp_pen = total_income

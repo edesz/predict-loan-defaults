@@ -50,7 +50,7 @@ def calculate_permutation_scores(
             X, y, pipe, best_t
         ).mean()
         if verbose:
-            print(f"feature={col}, repeat={repeat_index}, score={score:.2f}")
+            print(f"feat={col}, repeat={repeat_index}, score={score:.2f}\n")
         # compute permutation importance
         pi = base_score - score
         # bookkeeping
@@ -67,6 +67,7 @@ def manual_permutation_importance(
     baseline_score = bh.calculate_avg_return_vs_theoretical_v2(
         X, y, pipe, best_t
     ).mean()
+    permuted_cols = list(set(list(X)) - set(["int_rate", "loan_amnt", "term"]))
     shuffling_idx = X.reset_index(drop=True).index.to_numpy()
     rng = np.random.RandomState(42)
     if verbose:
@@ -86,12 +87,16 @@ def manual_permutation_importance(
             rng,
             verbose,
         )
-        for feature_index, feature_name in enumerate(list(X))
+        for feature_index, feature_name in enumerate(permuted_cols)
     )
     importances = executor(tasks)
     importances = pd.DataFrame(importances)
     importances_mean = importances.mean(axis=1)
-    return [importances_mean.to_numpy(), importances.to_numpy()]
+    return [
+        importances_mean.to_numpy(),
+        importances.to_numpy(),
+        permuted_cols,
+    ]
 
 
 def manual_plot_permutation_importance(
@@ -108,9 +113,11 @@ def manual_plot_permutation_importance(
     box_color="cyan",
     fig_size=(8, 8),
 ):
-    importances_mean, importances = manual_permutation_importance(
-        X, y, pipe, threshold, n_repeats, False
-    )
+    (
+        importances_mean,
+        importances,
+        permuted_cols,
+    ) = manual_permutation_importance(X, y, pipe, threshold, n_repeats, False)
     sorted_idx = importances_mean.argsort()
 
     _, ax = plt.subplots(figsize=fig_size)
@@ -124,7 +131,7 @@ def manual_plot_permutation_importance(
     )
     ax.axvline(x=0, color="k", ls="--", lw=1.25)
     ax.set_yticks(range(len(sorted_idx)))
-    ax.set_yticklabels(X.columns[sorted_idx][::-1])
+    ax.set_yticklabels(X[permuted_cols].columns[sorted_idx][::-1])
     ax.set_title(
         f"{plot_title} ({split_name.title()} split)",
         loc="left",
