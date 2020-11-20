@@ -42,16 +42,24 @@ def score_splits(X, y, train_idx, test_idx, pipe, threshold=0.5):
     }
 
 
-def score_cv_folds(pipe, X, y, cv, threshold=0.5):
+def score_cv_folds(pipe, X, y, cv, threshold=0.5, verbose=False):
     cv_fold_scores = [
         score_splits(X, y, train_idx, test_idx, pipe, threshold)
         for train_idx, test_idx in cv.split(X=X)
     ]
+    if verbose:
+        msg = (
+            f" > mean={cv_fold_scores.mean():.2f}, "
+            f"stdev={cv_fold_scores.std()}\n"
+        )
+        print(msg)
     df_cv = pd.DataFrame.from_records(cv_fold_scores)
     return df_cv
 
 
-def learning_curve(pipe, X, y, cv, train_size_blocks=11, threshold=0.5):
+def learning_curve(
+    pipe, X, y, cv, train_size_blocks=11, threshold=0.5, verbose=False
+):
     train_sizes = [
         int(i) for i in np.linspace(0, X.shape[0], train_size_blocks)
     ][1:]
@@ -61,7 +69,7 @@ def learning_curve(pipe, X, y, cv, train_size_blocks=11, threshold=0.5):
     # ]
     executor = Parallel(n_jobs=cpu_count(), backend="multiprocessing")
     tasks = (
-        delayed(score_cv_folds)(pipe, X[:r], y[:r], cv, threshold)
+        delayed(score_cv_folds)(pipe, X[:r], y[:r], cv, threshold, verbose)
         for r in train_sizes
     )
     scores = executor(tasks)

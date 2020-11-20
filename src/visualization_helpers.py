@@ -465,14 +465,15 @@ def plot_grouped_histogram(
     grid = plt.GridSpec(1, 2, wspace=wspace)
     ax1 = fig.add_subplot(grid[0, 0])
     ax2 = fig.add_subplot(grid[0, 1])
-    ax1.hist(df[df["misclassified"]][col_to_plot], alpha=alpha, label="True")
+    dfm = df[df["misclassified"]]
+    ax1.hist(dfm[dfm["is_default"] == 1][col_to_plot], alpha=alpha, label="M")
     ax1.hist(
-        df[~df["misclassified"]][col_to_plot],
+        df[df["is_default"] == 1][col_to_plot],
         alpha=alpha,
-        label="False",
+        label="All",
     )
     ax1.set_title(
-        "Misclassifications by " + col_to_plot.title(),
+        "Defaulted Loans by " + col_to_plot.title(),
         loc="left",
         fontweight="bold",
     )
@@ -484,11 +485,10 @@ def plot_grouped_histogram(
         columnspacing=0.2,
         frameon=False,
     )
-    ptitle = f"Loan defaults by {col_to_plot.title()}"
-    df_true_default = df[df["is_default"] == 1]
-    df_false_default = df[df["is_default"] == 0]
-    ax2.hist(df_true_default[col_to_plot], alpha=alpha, label="True")
-    ax2.hist(df_false_default[col_to_plot], alpha=alpha, label="False")
+    ptitle = f"Paid on-time loans by {col_to_plot.title()}"
+    dfm = df[df["misclassified"]]
+    ax2.hist(dfm[dfm["is_default"] == 0][col_to_plot], alpha=alpha, label="M")
+    ax2.hist(df[df["is_default"] == 0][col_to_plot], alpha=alpha, label="All")
     ax2.set_title(ptitle, loc="left", fontweight="bold")
     ax2.legend(
         loc="upper left",
@@ -637,3 +637,51 @@ def plot_lower_corr_heatmap(
     )
     ax.set_title(ptitle, loc="left", fontweight="bold", y=ptitle_y_loc)
     ax.tick_params(left=False, bottom=False)
+
+
+def plot_single_column_histogram(df, colname, ptitle, fig_size=(8, 4)):
+    _, ax = plt.subplots(figsize=fig_size)
+    df[colname].plot(kind="hist", ax=ax, lw=1.25, edgecolor="w", label="")
+    ax.set_title(ptitle, fontweight="bold", loc="left")
+    ax.set_ylabel(None)
+    ax.axvline(x=df[colname].median(), label="Median", color="k", ls="--")
+    ax.axvline(x=df[colname].mean(), label="Avg", color="r", ls="--")
+    ax.xaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.0f}"))
+    ax.legend(
+        loc="upper left",
+        bbox_to_anchor=(0.76, 1.1),
+        ncol=2,
+        handletextpad=0.2,
+        columnspacing=0.2,
+    )
+
+
+def plot_boxplot_using_quantiles(
+    boxes, ptitle, axis_tick_label_fontsize=12, fig_size=(6, 4)
+):
+    _, ax = plt.subplots(figsize=fig_size)
+    bxp1 = ax.bxp(
+        boxes,
+        positions=[1, 1.5],
+        widths=0.35,
+        showfliers=False,
+        patch_artist=True,
+        whiskerprops=dict(linewidth=1.25, color="black"),
+        capprops=dict(linewidth=1.25, color="black"),
+        boxprops=dict(linewidth=1.25),
+        medianprops=dict(linewidth=1.5, color="cyan"),
+    )
+    for patch in bxp1["boxes"]:
+        patch.set(facecolor="steelblue")
+    ax.xaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
+    ax.yaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
+    ax.grid(which="both", axis="both", color="lightgrey", zorder=0)
+    _ = customize_splines(ax)
+    _ = add_gridlines(ax)
+    ax.set_xlabel(None)
+    ax.set_title(
+        ptitle,
+        loc="left",
+        fontweight="bold",
+    )
+    ax.yaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.0f}"))

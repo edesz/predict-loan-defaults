@@ -112,6 +112,7 @@ def manual_plot_permutation_importance(
     axis_label_fontsize=14,
     box_color="cyan",
     fig_size=(8, 8),
+    verbose=False,
 ):
     (
         importances_mean,
