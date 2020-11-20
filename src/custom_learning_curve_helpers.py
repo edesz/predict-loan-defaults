@@ -48,11 +48,7 @@ def score_cv_folds(pipe, X, y, cv, threshold=0.5, verbose=False):
         for train_idx, test_idx in cv.split(X=X)
     ]
     if verbose:
-        msg = (
-            f" > mean={cv_fold_scores.mean():.2f}, "
-            f"stdev={cv_fold_scores.std()}\n"
-        )
-        print(msg)
+        print("done")
     df_cv = pd.DataFrame.from_records(cv_fold_scores)
     return df_cv
 
