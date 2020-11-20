@@ -82,7 +82,7 @@ three_four_dict = dict(
 one_dict_nb_name = "1_feature_reduction.ipynb"
 two_dict_nb_name = "2_feature_processing.ipynb"
 three_dict_nb_name = "3_exploratory_data_analysis.ipynb"
-four_dict_nb_name = "4_experiments_in_classification.ipynb"
+four_dict_nb_name = "5_experiments_in_classification_v2.ipynb"
 
 one_dict = dict(
     raw_data_path=raw_data_path,
@@ -131,6 +131,8 @@ three_four_dict.update(
             "mean_score_time",
             "clf_params",
         ],
+        thresholds_list=[0.01, 1, 0.01],
+        learning_curve_train_size_blocks=5,
     )
 )
 
