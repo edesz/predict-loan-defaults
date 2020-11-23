@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from joblib import Parallel, delayed
+from sklearn.utils import check_random_state
 
 import src.business_helpers as bh
 from src.visualization_helpers import customize_splines
@@ -31,6 +32,7 @@ def calculate_permutation_scores(
     # 'replace with re-indexed shuffled values' step (i.e. in-place
     #  shuffling) of the rows is not possible as explained here:
     # https://github.com/numpy/numpy/issues/14972
+    rng = check_random_state(rng)
     X = X.copy()
     scores = []
     for repeat_index in range(n_repeats):
@@ -59,7 +61,7 @@ def calculate_permutation_scores(
 
 
 def manual_permutation_importance(
-    X, y, pipe, best_t, n_repeats=1, verbose=True
+    X, y, pipe, best_t, n_repeats=1, verbose=True, parallel=False
 ):
     # baseline_score_old = bh.calculate_avg_return_vs_theoretical(
     #     X, y, pipe, best_t
@@ -67,30 +69,56 @@ def manual_permutation_importance(
     baseline_score = bh.calculate_avg_return_vs_theoretical_v2(
         X, y, pipe, best_t
     ).mean()
-    permuted_cols = list(set(list(X)) - set(["int_rate", "loan_amnt", "term"]))
+    # permuted_cols = list(
+    #     set(list(X)) - set(["int_rate", "loan_amnt", "term"])
+    # )
+    permuted_cols = [
+        c for c in list(X) if c not in ["int_rate", "loan_amnt", "term"]
+    ]
     shuffling_idx = X.reset_index(drop=True).index.to_numpy()
-    rng = np.random.RandomState(42)
+    # rng = np.random.RandomState(42)
+    random_state = check_random_state(42)
+    rng = random_state.randint(np.iinfo(np.int32).max + 1)
     if verbose:
         print(f"baseline score={baseline_score:.2f}")
-    executor = Parallel(n_jobs=cpu_count(), backend="multiprocessing")
-    tasks = (
-        delayed(calculate_permutation_scores)(
-            X,
-            feature_index,
-            feature_name,
-            pipe,
-            y,
-            baseline_score,
-            n_repeats,
-            best_t,
-            shuffling_idx,
-            rng,
-            verbose,
+    if parallel:
+        executor = Parallel(n_jobs=cpu_count(), backend="multiprocessing")
+        tasks = (
+            delayed(calculate_permutation_scores)(
+                X,
+                feature_index,
+                feature_name,
+                pipe,
+                y,
+                baseline_score,
+                n_repeats,
+                best_t,
+                shuffling_idx,
+                rng,
+                verbose,
+            )
+            for feature_index, feature_name in enumerate(permuted_cols)
         )
-        for feature_index, feature_name in enumerate(permuted_cols)
-    )
-    importances = executor(tasks)
+        importances = executor(tasks)
+    else:
+        importances = [
+            calculate_permutation_scores(
+                X,
+                feature_index,
+                feature_name,
+                pipe,
+                y,
+                baseline_score,
+                n_repeats,
+                best_t,
+                shuffling_idx,
+                rng,
+                verbose,
+            )
+            for feature_index, feature_name in enumerate(permuted_cols)
+        ]
     importances = pd.DataFrame(importances)
+    # print(importances)
     importances_mean = importances.mean(axis=1)
     return [
         importances_mean.to_numpy(),
@@ -113,17 +141,24 @@ def manual_plot_permutation_importance(
     box_color="cyan",
     fig_size=(8, 8),
     verbose=False,
+    parallel=False,
 ):
     (
         importances_mean,
         importances,
         permuted_cols,
-    ) = manual_permutation_importance(X, y, pipe, threshold, n_repeats, False)
-    sorted_idx = importances_mean.argsort()
-
+    ) = manual_permutation_importance(
+        X, y, pipe, threshold, n_repeats, verbose, parallel
+    )
+    df_importances_mean = pd.DataFrame(
+        importances_mean, index=permuted_cols, columns=["imp"]
+    ).sort_values(by=["imp"], ascending=False)
+    df_importances = pd.DataFrame(importances, index=permuted_cols).reindex(
+        df_importances_mean.index
+    )
     _, ax = plt.subplots(figsize=fig_size)
     sns.boxplot(
-        data=importances[sorted_idx][::-1].T,
+        data=df_importances.T,
         orient="h",
         color=box_color,
         saturation=0.5,
@@ -131,8 +166,8 @@ def manual_plot_permutation_importance(
         ax=ax,
     )
     ax.axvline(x=0, color="k", ls="--", lw=1.25)
-    ax.set_yticks(range(len(sorted_idx)))
-    ax.set_yticklabels(X[permuted_cols].columns[sorted_idx][::-1])
+    ax.set_yticks(range(len(permuted_cols)))
+    ax.set_yticklabels(df_importances_mean.index.tolist())
     ax.set_title(
         f"{plot_title} ({split_name.title()} split)",
         loc="left",
@@ -149,3 +184,15 @@ def manual_plot_permutation_importance(
     ax.grid(which="both", axis="both", color="lightgrey", zorder=0)
     ax.xaxis.grid(True, which="major", color="lightgrey", zorder=0)
     _ = customize_splines(ax)
+    return [
+        importances_mean,
+        importances,
+        permuted_cols,
+        df_importances,
+        df_importances_mean,
+    ]
+    # return [
+    #     importances_mean,
+    #     importances,
+    #     permuted_cols,
+    # ]

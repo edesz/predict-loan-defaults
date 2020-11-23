@@ -16,7 +16,7 @@ data_dir = os.path.join(PROJ_ROOT_DIR, "data")
 output_notebook_dir = os.path.join(PROJ_ROOT_DIR, "executed_notebooks")
 
 raw_data_path = os.path.join(data_dir, "raw", "lending_club_loans.csv")
-three_four_dict = dict(
+three_five_dict = dict(
     cloud_storage="yes",
     nan_threshold=0.5,
     non_useful_cols=["url", "desc"],
@@ -82,7 +82,7 @@ three_four_dict = dict(
 one_dict_nb_name = "1_feature_reduction.ipynb"
 two_dict_nb_name = "2_feature_processing.ipynb"
 three_dict_nb_name = "3_exploratory_data_analysis.ipynb"
-four_dict_nb_name = "5_experiments_in_classification_v2.ipynb"
+five_dict_nb_name = "5_experiments_in_classification_v2.ipynb"
 
 one_dict = dict(
     raw_data_path=raw_data_path,
@@ -92,14 +92,14 @@ two_dict = dict(
     raw_data_path=raw_data_path,
     cloud_storage="yes",
 )
-three_dict = copy.deepcopy(three_four_dict)
+three_dict = copy.deepcopy(three_five_dict)
 three_dict.update(
     dict(
         raw_data_path=raw_data_path,
     )
 )
-# Append the inputs required by 4_*.ipynb
-three_four_dict.update(
+# Append the inputs required by 5_*.ipynb
+three_five_dict.update(
     dict(
         raw_data_file_path=raw_data_path,
         correlated_features=[
@@ -206,13 +206,13 @@ if __name__ == "__main__":
         one_dict,
         two_dict,
         three_dict,
-        three_four_dict,
+        three_five_dict,
     ]
     nb_name_list = [
         one_dict_nb_name,
         two_dict_nb_name,
         three_dict_nb_name,
-        four_dict_nb_name,
+        five_dict_nb_name,
     ]
     notebook_list = [
         {os.path.join(PROJ_ROOT_DIR, nb_name): nb_dict}
