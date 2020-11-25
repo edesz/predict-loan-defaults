@@ -657,7 +657,10 @@ def plot_single_column_histogram(df, colname, ptitle, fig_size=(8, 4)):
 
 
 def plot_boxplot_using_quantiles(
-    boxes, ptitle, axis_tick_label_fontsize=12, fig_size=(6, 4)
+    boxes,
+    ptitle,
+    axis_tick_label_fontsize=12,
+    fig_size=(6, 4),
 ):
     _, ax = plt.subplots(figsize=fig_size)
     bxp1 = ax.bxp(
@@ -685,3 +688,79 @@ def plot_boxplot_using_quantiles(
         fontweight="bold",
     )
     ax.yaxis.set_major_formatter(mtick.StrMethodFormatter("{x:,.0f}"))
+
+
+def plot_multiple_boxplots(
+    df,
+    x,
+    y_s,
+    ptitles,
+    axis_tick_label_fontsize=12,
+    x_ticks_formatter="{x:,.0f}",
+    fig_size=(12, 4),
+):
+    fig = plt.figure(figsize=fig_size)
+    grid = plt.GridSpec(1, len(y_s), wspace=0.2)
+    for c in range(2):
+        ax = fig.add_subplot(grid[0, c])
+        sns.boxplot(x=x, y=y_s[c], ax=ax, data=df)
+        ax.set_xlabel(None)
+        ax.set_ylabel(None)
+        if x_ticks_formatter:
+            ax.yaxis.set_major_formatter(
+                mtick.StrMethodFormatter(x_ticks_formatter)
+            )
+        ax.set_title(ptitles[c], loc="left", fontweight="bold")
+        ax.xaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
+        ax.yaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
+        ax.yaxis.grid(True, color="lightgrey")
+        ax.spines["bottom"].set_edgecolor("black")
+        ax.spines["bottom"].set_linewidth(1.5)
+
+
+def plot_multi_catplot(
+    df,
+    x,
+    y,
+    cat_columns,
+    ptitles,
+    x_ticks_formatter="{x:,.0f}",
+    plot_color="red",
+    axis_tick_label_fontsize=12,
+    fig_height=4,
+    fig_aspect_ratio=1.25,
+):
+    g = sns.catplot(
+        data=df,
+        kind="bar",
+        x=x,
+        col=cat_columns,
+        y=y,
+        sharey=False,
+        palette=sns.color_palette([plot_color]),
+        alpha=1,
+        height=fig_height,
+        aspect=fig_aspect_ratio,
+        legend=False,
+    )
+    for ax, ptitle in zip([g.axes[0][0], g.axes[0][1]], ptitles):
+        ax.set_ylabel(None)
+        ax.set_xlabel(None)
+        ax.set_title(None)
+        if x_ticks_formatter:
+            ax.yaxis.set_major_formatter(
+                mtick.StrMethodFormatter(x_ticks_formatter)
+            )
+        if ptitle == ptitles[-1]:
+            ax.xaxis.set_ticks_position("top")
+            ax.yaxis.set_ticks_position("right")
+            ax.spines["bottom"].set_visible(False)
+            ax.spines["left"].set_visible(False)
+            ax.spines["top"].set_visible(True)
+            ax.spines["right"].set_visible(True)
+        ax.spines["top"].set_edgecolor("black")
+        ax.spines["top"].set_linewidth(1.5)
+        ax.set_title(ptitle, loc="left", fontweight="bold")
+        ax.xaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
+        ax.yaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
+        ax.yaxis.grid(True, color="lightgrey")
