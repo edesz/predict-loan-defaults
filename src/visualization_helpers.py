@@ -758,8 +758,11 @@ def plot_multi_catplot(
             ax.spines["left"].set_visible(False)
             ax.spines["top"].set_visible(True)
             ax.spines["right"].set_visible(True)
-        ax.spines["top"].set_edgecolor("black")
-        ax.spines["top"].set_linewidth(1.5)
+            ax.spines["top"].set_edgecolor("black")
+            ax.spines["top"].set_linewidth(1.5)
+        else:
+            ax.spines["bottom"].set_edgecolor("black")
+            ax.spines["bottom"].set_linewidth(1.5)
         ax.set_title(ptitle, loc="left", fontweight="bold")
         ax.xaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
         ax.yaxis.set_tick_params(labelsize=axis_tick_label_fontsize)
