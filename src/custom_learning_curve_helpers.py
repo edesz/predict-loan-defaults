@@ -23,9 +23,9 @@ def scoring_func(X, y, pipe, threshold=0.5):
     return score
 
 
-def score_splits(X, y, train_idx, test_idx, pipe, threshold=0.5):
+def score_splits(X, y, train_idx, test_idx, pipe, r, threshold=0.5):
     # print(train_idx, test_idx)
-    X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+    X_train, y_train = X.iloc[train_idx][:r], y.iloc[train_idx][:r]
     X_test, y_test = X.iloc[test_idx], y.iloc[test_idx]
     start_time = time()
     pipe.fit(X_train, y_train)
@@ -42,9 +42,9 @@ def score_splits(X, y, train_idx, test_idx, pipe, threshold=0.5):
     }
 
 
-def score_cv_folds(pipe, X, y, cv, threshold=0.5, verbose=False):
+def score_cv_folds(pipe, X, y, cv, r, threshold=0.5, verbose=False):
     cv_fold_scores = [
-        score_splits(X, y, train_idx, test_idx, pipe, threshold)
+        score_splits(X, y, train_idx, test_idx, pipe, r, threshold)
         for train_idx, test_idx in cv.split(X=X)
     ]
     if verbose:
@@ -65,7 +65,7 @@ def learning_curve(
     # ]
     executor = Parallel(n_jobs=cpu_count(), backend="multiprocessing")
     tasks = (
-        delayed(score_cv_folds)(pipe, X[:r], y[:r], cv, threshold, verbose)
+        delayed(score_cv_folds)(pipe, X, y, cv, r, threshold, verbose)
         for r in train_sizes
     )
     scores = executor(tasks)
